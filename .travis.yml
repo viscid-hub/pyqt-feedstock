@@ -4,7 +4,7 @@
 language: generic
 
 os: osx
-osx_image: xcode6.4
+osx_image: xcode8.3
 
 env:
   matrix:
@@ -22,6 +22,39 @@ before_install:
     - |
       (curl https://raw.githubusercontent.com/conda-forge/conda-forge-ci-setup-feedstock/master/recipe/ff_ci_pr_build.py | \
           python - -v --ci "travis" "${TRAVIS_REPO_SLUG}" "${TRAVIS_BUILD_NUMBER}" "${TRAVIS_PULL_REQUEST}") || exit 1
+
+    # hack: download legacy OSX 10.9 sdk from github
+    - |
+      echo "Installing MacOSX10.9.sdk"
+      SDK_MD5="de552e9a4ef12999d2e1f25acce51a76"
+      SDK_SHA256="a7e52651ec33f0fc7fc025734365854f012875748ebe1a5d1cd8555c5a118ebd"
+      echo "Downloading SDK"
+      SDK_NAME="MacOSX10.9.sdk"
+      curl -OfsSL https://gist.github.com/viscid-hub/f108b33bcbe4bf7d1b63cf76de4d435a/raw/MacOSX10.9.sdk.tar.bz2
+      echo "Decompressing SDK"
+      bzip2 --decompress --force ${SDK_NAME}.tar.bz2
+      echo "Verifying SDK"
+      dl_md5="$(openssl dgst -md5 ${SDK_NAME}.tar | awk '{print tolower($NF)}')"
+      dl_sha256="$(openssl dgst -sha256 ${SDK_NAME}.tar | awk '{print tolower($NF)}')"
+      if [ "${SDK_MD5}" != "${dl_md5}" ]; then
+        echo "!!!! MacOSX10.9.sdk md5 hash mismatch !!!!"
+        echo "expected hash    : ${SDK_MD5}"
+        echo "hash of download : ${dl_md5}"
+        exit 1
+      fi
+      if [ "${SDK_SHA256}" != "${dl_sha256}" ]; then
+        echo "!!!! MacOSX10.9.sdk sha256 hash mismatch !!!!"
+        echo "expected hash    : ${SDK_SHA256}"
+        echo "hash of download : ${dl_sha256}"
+        exit 1
+      fi
+      echo "Extracting SDK"
+      tar -xf MacOSX10.9.sdk.tar
+      echo "Moving SDK"
+      sdk_dest="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs"
+      sudo mkdir -p ${sdk_dest}
+      sudo mv MacOSX10.9.sdk ${sdk_dest}/
+      export CONDA_BUILD_SYSROOT="${sdk_dest}/MacOSX10.9.sdk"
 
     # Remove homebrew.
     - |
