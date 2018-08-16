@@ -11,7 +11,6 @@ export PYTHONUNBUFFERED=1
 cat >~/.condarc <<CONDARC
 
 channels:
- - conda-forge
  - defaults
 
 conda-build:
@@ -24,7 +23,8 @@ CONDARC
 # A lock sometimes occurs with incomplete builds. The lock file is stored in build_artifacts.
 conda clean --lock
 
-conda install --yes --quiet conda-forge-ci-setup=1 conda-build
+conda install --yes --quiet -c conda-forge conda-forge-ci-setup=1
+conda install --yes --quiet conda-build
 source run_conda_forge_build_setup
 
 
